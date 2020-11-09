@@ -18,17 +18,18 @@ void decryptData_01(char *data, int sized)
 		//Set up the stack frame
 		push ebp
 		mov ebp, esp
-		sub esp, 32
+		sub esp, 20
 
 		//Store the parameter and initial value in a local variable		
 		mov dword ptr[ebp - 4], eax//Data
 		mov dword ptr[ebp - 8], ecx//DataLength
-		mov dword ptr[ebp - 12], 0//loop variable
+		xor ebx, ebx //Loop Variable (Offset) Stored at EBX
 
 		//Save starting index as local variable
 		//starting_index = gPasswordHash[0] * 256 + gPasswordHash[1];
 		lea	esi, gPasswordHash //get the starting address of the password hash
 		xor eax, eax //clear eax
+		xor edx, edx //clear edx
 		xor ecx, ecx //clear ecx
 		mov al, byte ptr[esi] //get first byte of password hash
 		mov cl, byte ptr[esi + 1] //get the second byte of the password hash
@@ -40,40 +41,29 @@ void decryptData_01(char *data, int sized)
 		mov esi, gptrKey
 		mov dword ptr[ebp - 20], esi //store the key pointer
 
-
 		//Loop over the data buffer
 		enc_loop :
 				//Getting Byte
 			mov eax, dword ptr[ebp - 4]  //get the data base pointer
-			mov ecx, dword ptr[ebp - 12] //get the current offset
-			add eax, ecx //add the offset to the base
-			mov al, byte ptr[eax] //move the current byte to a register
-			and eax, 00FFh  //mask the lower byte
-			mov byte ptr[ebp - 24], al //Store the data byte in a local variable
+			add eax, ebx //add the offset to the base
+			mov dword ptr[ebp-12], eax // Store Offset + Base
+			mov dl, byte ptr[eax] //move the current byte to a register
 
 				//Getting Key
 			mov eax, dword ptr[ebp - 20] //get the key base pointer
-			mov ecx, dword ptr[ebp - 16] //get the Starting_index, NOTE: Will need to be Index come milestone 2
-			add eax, ecx //add the offset to the base
-			mov al, byte ptr[eax] //move the current byte to a register
-			and eax, 00FFh //mask the lower byte
+			add eax, dword ptr[ebp - 16] //get the Starting_index, NOTE: Will need to be Index come milestone 2
+			mov eax, dword ptr[eax] //move the current byte to a register
 
 				//XOR Byte with Key
-			mov ecx, dword ptr[ebp - 24] //get the data byte from earlier
-			xor eax, ecx //xor the key and data byte
-			mov dword ptr[ebp - 28], eax //store the result in a local variable
+			xor al, dl //xor the key and data byte
 
 				//Store the xor byte into the buffer				
-			mov eax, dword ptr[ebp - 4]//get the data base pointer
-			mov ecx, dword ptr[ebp - 12]//get the current offset
-			add eax, ecx //add the offset to the base
-			mov ecx, dword ptr[ebp - 28] //get the byte from the local variable
-			mov byte ptr[eax], cl //move the result byte back into the data buffer
+			mov ecx, dword ptr[ebp - 12] // Retrieve Offset + Base
+			mov byte ptr[ecx], al // Move the Result byte back into the data buffer
 
 				//Increment and CMP for Loop.
-			inc[ebp - 12] //increment the offset
-			mov eax, [ebp - 12] //move to register for comparison
-			cmp eax, [ebp - 8] //compare to the data length
+			inc ebx //increment the offset
+			cmp ebx, [ebp - 8] //compare to the data length
 			jne enc_loop //Loop if more data needs to process
 
 			//return stack frame
