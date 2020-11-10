@@ -19,7 +19,7 @@ void encryptData_02(char* data, int datalength)
 		//Set up the stack frame
 		push ebp
 		mov ebp, esp
-		sub esp, 20
+		sub esp, 24
 
 		//Store the parameter and initial value in a local variable		
 		mov dword ptr[ebp - 4], eax//Data
@@ -42,6 +42,10 @@ void encryptData_02(char* data, int datalength)
 		mov esi, gptrKey
 		mov dword ptr[ebp - 20], esi //store the key pointer
 
+		//Get the gEncodeTable pointer
+		lea esi, gEncodeTable
+		mov dword ptr[ebp - 24], esi
+
 		//Loop over the data buffer
 		enc_loop :
 		//Getting Byte
@@ -54,6 +58,7 @@ void encryptData_02(char* data, int datalength)
 			mov eax, dword ptr[ebp - 20] //get the key base pointer
 			add eax, dword ptr[ebp - 16] //get the Starting_index, NOTE: Will need to be Index come milestone 2
 			mov eax, dword ptr[eax] //move the current byte to a register
+			and eax, 0000000FFh
 
 				//XOR Byte with Key
 			xor al, dl //xor the key and data byte
@@ -62,9 +67,48 @@ void encryptData_02(char* data, int datalength)
 			//Team 10 Encryption Order: ECDAB
 
 			//#E Rotate 3 Bits Left
-			//rol al, 3
-			//#C Nibble Rotate Left 1
+			rol al, 3
+			
+			//#C Nibble Rotate Left 1 95 -> 3A
+			xor edx, edx	//Clear
+			xor ecx, ecx	//Clear
+			mov cl, al		//Copy
 
+			and al, 0F0h	//High Bit 
+			shr al, 4		//Place into Nibble Low
+			mov dl, al		//Move to DL for processing
+			shr dl, 3		//Get rid of last 3 bits in DL
+			shl al, 1		//Get rid of first bit in AL
+			and al, 00Fh	//Dump that first bit
+			add al, dl		//Put the "First bit" back into AL's Last bit slot
+
+			and cl, 00Fh	//Low Bit
+			mov dl, cl		//Move to DL for processing
+			shr dl, 3		//Get rid of last 3 bits in DL
+			shl cl, 1		//Get rid of first bit in CL
+			and cl, 00Fh	//Dump that first bit	
+			add cl, dl		//Put the "First bit" back into AL's Last bit slot					
+			
+			shl al, 4		//Put AL back into the First Nibble
+			add al, cl		//Combine the two Nibbles AL, CL
+
+			//#D Invert Bits 1 5 6
+			xor al, 000110001b
+
+			//#A Table Lookup
+			mov ecx, dword ptr[ebp-24]	//Get table pointer
+			add ecx, eax				//Add al to get correct position in table
+			mov al, byte ptr[ecx]		//Get new byte from table
+
+			//#B Reverse Bit order
+			xor ecx, ecx //Clear
+			xor edx, edx //Clear
+			mov ecx, 8 //Set Count
+			rev_loop :
+				rcr al, 1 //Rotate Right
+				rcl dl, 1 //Rotate Left
+				loop rev_loop
+			mov al, dl //Move Result back into al
 
 		//MILESTONE #2 Ends HERE
 

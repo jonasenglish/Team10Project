@@ -71,7 +71,7 @@ char gOutFileName[256];
 char gKeyFileName[256];
 int gOp = 0;			// 1 = encrypt, 2 = decrypt
 int gNumRounds = 1;
-int gMilestone = 1;
+int gMilestone = 2;
 
 
 // code to read the file to encrypt
@@ -107,7 +107,7 @@ int encryptFile(FILE *fptrIn, FILE *fptrOut)
 		break;
 
 	case 2:
-//		encryptData_02(buffer, filesize);
+		encryptData_02(buffer, filesize);
 		break;
 
 	case 3:
@@ -155,7 +155,7 @@ int decryptFile(FILE *fptrIn, FILE *fptrOut)
 		break;
 
 	case 2:
-//		decryptData_02(buffer, filesize);
+		decryptData_02(buffer, filesize);
 		break;
 
 	case 3:
